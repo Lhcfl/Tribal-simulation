@@ -1,7 +1,7 @@
 function check_power (human) {
-    if (human.age < 12 || human.pregnant == true) return 0;
-    else if (human.gender == 0 && human.age > 20) return 9;
-    else if (human.gender == 1 && human.age > 20 && human.age < 24) return 15;
+    if (human.age < 12 || human.pregnant == true) return 0; // 12岁以下无战斗力
+    else if (human.gender == 0 && human.age > 20) return 9;  // 20岁以上女性战斗力降低到9
+    else if (human.gender == 1 && human.age > 14 && human.age < 24) return 20; // 更新：只要是14岁以上男性战斗力全部变成20
     else if (human.gender == 1 && human.age >= 24) return 20;
     else return 10;
 }
@@ -42,13 +42,15 @@ function generate_tribal(team, num, gender_func) {
                 if (Math.random() < possibility + 1.0015 ** this.people[i].age - 1) {
                     this.people.splice(i--, 1);
                     continue;  // randomly die
+                    // 自然死亡
                 } 
                 this.people[i].age++; this.people[i].gap++;
                 if (this.people[i].pregnant) {
                     this.people[i].pregnant = false;
                     this.people[i].gap = 0;
-                    if (Math.random() < 0.5) this.people.push(new_human(this.gender_func(this.people.length))); // 50%可能流产
+                    if (Math.random() < 0.5) this.people.push(new_human(this.gender_func(this.people.length))); // 50%可能性流产
                 }
+                // 记数部分：add是今年孕妇数目，male/female是今年男女数目
                 if (this.people[i].gap >= 2 && this.people[i].gender == 0 && this.people[i].age >= 18) {
                     this.people[i].pregnant = true;
                     this.add++;
@@ -91,16 +93,18 @@ function main_loop() {
             let j = Math.round(Math.random() * team.length - 0.5);
             if (j == i) continue;
             
-            if (team[i].combat_power / team[j].combat_power > 2) { // 实力差距悬殊
+            if (team[i].combat_power / team[j].combat_power > 2) { // 实力差距悬殊，战斗力2以上
                 console.log(`Tribal${i} of team${team[i].team} fight to Tribal${j} of team${team[j].team} and win!`)
 
                 // kill loser's half
+                // 杀掉失败者的所有男性和一半战斗力单位
                 for (let iter = 0; iter < team[j].people.length; iter++) {
                     if (team[j].people[iter].gender == 1 || (check_power(team[j].people[iter]) != 0 && Math.random() < 0.5) ) {
                         team[j].people.splice(iter--, 1);
                     }
                 }
                 // kill winner's
+                // 胜利者自身有相同的战斗力损耗
                 let total = team[j].combat_power;
                 for (let iter = 0; iter < team[i].people.length; iter++) {
                     if (check_power(team[i].people[iter]) != 0 ) {
@@ -108,6 +112,7 @@ function main_loop() {
                     }
                 }
 
+                // 收编失败者的所有妇女小孩
                 for (let person of team[j].people) team[i].people.push(person);
                 
                 // delete the tribal
@@ -117,12 +122,14 @@ function main_loop() {
                 console.log(`Tribal${i} of team${team[i].team} fight to Tribal${j} of team${team[j].team}`)
                 let total = 0;
                 // kill loser's half
+                // 杀掉失败者的一半战斗力单位，不区分性别
                 for (let iter = 0; iter < team[j].people.length; iter++) {
                     if ((check_power(team[j].people[iter]) != 0 && Math.random() < 0.5) ) {
                         total += check_power(team[j].people.splice(iter--, 1)[0]);
                     }
                 }
                 // kill winner's
+                // 胜利者自身产生相同战损
                 for (let iter = 0; iter < team[i].people.length; iter++) {
                     if (check_power(team[i].people[iter]) != 0 && total > 0) {
                         total -= check_power(team[i].people.splice(iter--, 1)[0]);
@@ -135,7 +142,7 @@ function main_loop() {
         }
     }
 }
-
+// 主循环
 setInterval(() => {
     main_loop();
 }, 250);
